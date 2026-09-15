@@ -1,50 +1,100 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  CreditCard,
-  TrendingUp,
-  Award,
-  CalendarDays,
   ArrowUpRight,
   ArrowDownRight,
-  Tag,
+  CalendarDays,
   Copy,
-  CheckCircle2
+  CheckCircle2,
+  Tag,
+  RefreshCw,
 } from 'lucide-react';
+import { fetchMe } from '@/lib/api';
+import { getSession } from '@/lib/auth';
+import type { MeResponse, PointHistoryItem } from '@/lib/api';
 
 export default function DashboardOverview() {
-  const [filter, setFilter] = useState<'all' | 'earned' | 'redeemed'>('all');
+  const [filter, setFilter] = useState<'all' | 'added' | 'deducted'>('all');
   const [copied, setCopied] = useState(false);
+  const [meData, setMeData] = useState<MeResponse | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
+  const [fetchError, setFetchError] = useState('');
 
-  const user = {
-    points: 1250,
-    pointsWorth: 125.00,
-    uniqueCode: 'RAD-LUX-8X9B2'
-  };
+  const loadData = useCallback(async () => {
+    const session = getSession();
+    if (!session) return;
 
-  const transactions = [
-    { id: 1, type: 'earned', description: 'Purchase: Luxury Silk Robe', points: 150, date: '2026-07-15T14:30:00' },
-    { id: 2, type: 'redeemed', description: 'Reward: 10% Off Next Order', points: 500, date: '2026-07-10T09:15:00' },
-    { id: 3, type: 'earned', description: 'Purchase: Aromatherapy Set', points: 75, date: '2026-07-02T16:45:00' },
-    { id: 4, type: 'earned', description: 'Welcome Bonus', points: 500, date: '2026-06-28T10:00:00' },
-    { id: 5, type: 'earned', description: 'Birthday Reward', points: 200, date: '2026-06-15T00:00:00' },
-    { id: 6, type: 'redeemed', description: 'Reward: Free Shipping', points: 100, date: '2026-05-20T11:20:00' },
-  ];
+    setLoadingData(true);
+    setFetchError('');
 
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-  });
+    const { data, error } = await fetchMe(session.auth_token);
+
+    setLoadingData(false);
+
+    if (error || !data) {
+      setFetchError(error ?? 'Failed to load your data.');
+      return;
+    }
+
+    setMeData(data);
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(user.uniqueCode);
+    if (!meData) return;
+    navigator.clipboard.writeText(meData.referral_id);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const filtered = transactions.filter(tx =>
-    filter === 'all' ? true : tx.type === filter
-  );
+  const filtered: PointHistoryItem[] =
+    meData?.point_history.filter((tx) =>
+      filter === 'all' ? true : tx.type === filter
+    ) ?? [];
+
+  // ─── Loading skeleton ───────────────────────────────────────────────────
+  if (loadingData) {
+    return (
+      <div className="dashboard-content animate-fade-in">
+        <div className="data-loading">
+          <div className="loading-card skeleton" />
+          <div className="loading-rows">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="skeleton skeleton-row" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Error state ────────────────────────────────────────────────────────
+  if (fetchError) {
+    return (
+      <div className="dashboard-content animate-fade-in">
+        <div className="data-error">
+          <p className="data-error__msg">{fetchError}</p>
+          <button className="retry-btn" onClick={loadData}>
+            <RefreshCw size={16} />
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-content animate-fade-in">
@@ -55,36 +105,36 @@ export default function DashboardOverview() {
         <div className="loyalty-hero-section">
           {/* Virtual Loyalty Card */}
           <div className="virtual-card">
-            <div className="virtual-card-glass"></div>
+            <div className="virtual-card-glass" />
 
             <div className="virtual-card-top">
               <div className="brand-logo-white">
                 <img src="/logo.svg" alt="Radiant Repose" />
               </div>
-              <div className="card-tier">VIP MEMBER</div>
+              <div className="card-tier">LOYALTY MEMBER</div>
             </div>
 
             <div className="virtual-card-body">
               <p className="card-label">Current Balance</p>
               <h2 className="card-points">
-                {user.points.toLocaleString()} <span className="card-pts">PTS</span>
+                {(meData?.balance ?? 0).toLocaleString()} <span className="card-pts">PTS</span>
               </h2>
             </div>
 
             <div className="virtual-card-footer">
               <div className="footer-item">
-                <span className="footer-label">Value</span>
-                <span className="footer-value">${user.pointsWorth.toFixed(2)}</span>
+                <span className="footer-label">Referral ID</span>
+                <span className="footer-value">{meData?.referral_id ?? '—'}</span>
               </div>
               <div className="footer-item">
-                <span className="footer-label">Lifetime Earned</span>
-                <span className="footer-value">{(user.points + 600).toLocaleString()} pts</span>
+                <span className="footer-label">Total Referrals</span>
+                <span className="footer-value">{meData?.total_referrals ?? 0}</span>
               </div>
             </div>
 
             {/* Decorative background glows */}
-            <div className="card-glow card-glow-1"></div>
-            <div className="card-glow card-glow-2"></div>
+            <div className="card-glow card-glow-1" />
+            <div className="card-glow card-glow-2" />
           </div>
         </div>
       </section>
@@ -100,8 +150,12 @@ export default function DashboardOverview() {
             <p>Present this code in-store or enter it at checkout to apply your points.</p>
           </div>
           <div className="code-action">
-            <div className="code-display">{user.uniqueCode}</div>
-            <button className={`copy-btn ${copied ? 'copied' : ''}`} onClick={handleCopyCode}>
+            <div className="code-display">{meData?.referral_id ?? '—'}</div>
+            <button
+              className={`copy-btn ${copied ? 'copied' : ''}`}
+              onClick={handleCopyCode}
+              disabled={!meData}
+            >
               {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
               <span>{copied ? 'Copied!' : 'Copy Code'}</span>
             </button>
@@ -113,7 +167,6 @@ export default function DashboardOverview() {
 
           <div className="reward-card">
             <div className="reward-icon reward-icon--store">
-              {/* House / store icon */}
               <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
                 fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -128,7 +181,6 @@ export default function DashboardOverview() {
 
           <div className="reward-card">
             <div className="reward-icon reward-icon--cart">
-              {/* Shopping cart icon */}
               <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
                 fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
@@ -160,13 +212,13 @@ export default function DashboardOverview() {
           <div className="section-header">
             <h3 className="section-title">Points History</h3>
             <div className="filter-tabs">
-              {(['all', 'earned', 'redeemed'] as const).map(f => (
+              {(['all', 'added', 'deducted'] as const).map((f) => (
                 <button
                   key={f}
                   className={`filter-tab ${filter === f ? 'active' : ''}`}
                   onClick={() => setFilter(f)}
                 >
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                  {f === 'all' ? 'All' : f === 'added' ? 'Earned' : 'Redeemed'}
                 </button>
               ))}
             </div>
@@ -176,26 +228,26 @@ export default function DashboardOverview() {
             {filtered.map((tx) => (
               <div key={tx.id} className="list-item">
                 <div className="tx-icon-wrapper">
-                  <div className={`tx-icon ${tx.type}`}>
-                    {tx.type === 'earned' ? <ArrowUpRight size={22} /> : <ArrowDownRight size={22} />}
+                  <div className={`tx-icon ${tx.type === 'added' ? 'earned' : 'redeemed'}`}>
+                    {tx.type === 'added' ? <ArrowUpRight size={22} /> : <ArrowDownRight size={22} />}
                   </div>
                 </div>
                 <div className="tx-info">
-                  <h4 className="tx-description">{tx.description}</h4>
+                  <h4 className="tx-description">{tx.title}</h4>
                   <div className="tx-meta">
                     <CalendarDays size={14} />
-                    <span>{formatDate(tx.date)}</span>
+                    <span>{formatDate(tx.timestamp)}</span>
                   </div>
                 </div>
-                <div className={`tx-amount ${tx.type}`}>
-                  {tx.type === 'earned' ? '+' : '-'}{tx.points} pts
+                <div className={`tx-amount ${tx.type === 'added' ? 'earned' : 'redeemed'}`}>
+                  {tx.type === 'added' ? '+' : ''}{tx.points} pts
                 </div>
               </div>
             ))}
 
             {filtered.length === 0 && (
               <div className="empty-state">
-                <p>No {filter} transactions found.</p>
+                <p>No {filter === 'all' ? '' : filter === 'added' ? 'earned' : 'redeemed'} transactions found.</p>
               </div>
             )}
           </div>
