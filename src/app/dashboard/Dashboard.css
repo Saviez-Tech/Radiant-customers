@@ -122,6 +122,65 @@
   margin: 0 auto;
 }
 
+/* =============================================
+   STANDARD SHOP BANNER
+   ============================================= */
+.standard-shop-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 1.5rem;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-top: -1rem; /* bring it slightly closer to the card */
+}
+
+.standard-shop-text {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.standard-shop-icon {
+  font-size: 1.2rem;
+}
+
+.standard-shop-btn {
+  display: inline-flex;
+  align-items: center;
+  background: var(--primary-color);
+  color: #fff;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.standard-shop-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(140, 0, 0, 0.15);
+}
+
+.standard-shop-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .standard-shop-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+}
+
 .section-title {
   font-size: 1.3rem;
   font-weight: 700;

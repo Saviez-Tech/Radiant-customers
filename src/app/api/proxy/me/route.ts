@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 
 // Server-side only — uses API_URL (no NEXT_PUBLIC_ prefix, never sent to the browser).
 // In .env.local: API_URL=http://localhost:8000
-const BACKEND = (process.env.API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
+const BACKEND = (process.env.API_URL ?? 'https://radiantrepose-backend.onrender.com').replace(/\/$/, '');
 
 /**
  * GET /api/proxy/me

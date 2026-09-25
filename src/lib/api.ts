@@ -1,10 +1,7 @@
 // ─── Base URL ────────────────────────────────────────────────────────────────
-// Reads from NEXT_PUBLIC_API_URL in .env.local
-// Set it to your backend's base URL (e.g. http://localhost:8000)
-if (!process.env.NEXT_PUBLIC_API_URL) {
-  console.warn('[api] NEXT_PUBLIC_API_URL is not set — falling back to http://localhost:8000');
-}
-const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
+// All requests are routed through Next.js server-side proxy routes (/api/proxy/*)
+// to avoid CORS issues. NEXT_PUBLIC_API_URL is no longer used for direct browser calls.
+// The actual backend URL is set via API_URL in .env.local (server-side only).
 
 // ─── Response Types ──────────────────────────────────────────────────────────
 
@@ -76,9 +73,8 @@ export async function apiFetch<T>(
     headers['Authorization'] = `Token ${token}`;
   }
 
-  // Paths starting with /api/proxy/ are same-origin Next.js route handlers
-  // (used to avoid CORS on authenticated endpoints). Don't prepend BASE_URL.
-  const url = path.startsWith('/api/proxy/') ? path : `${BASE_URL}${path}`;
+  // All paths go through same-origin Next.js proxy routes — no BASE_URL needed.
+  const url = path;
 
   try {
     const res = await fetch(url, {
@@ -109,18 +105,22 @@ export async function apiFetch<T>(
 
 // ─── Endpoint helpers ────────────────────────────────────────────────────────
 
+// Routed through the Next.js proxy to avoid CORS (same-origin → server → Django).
+// See: src/app/api/proxy/register/route.ts
 export const registerCustomer = (payload: {
   phone_number: string;
   full_name: string;
   password: string;
 }) =>
-  apiFetch<RegisterResponse>('/api/customers/register/', {
+  apiFetch<RegisterResponse>('/api/proxy/register', {
     method: 'POST',
     body: payload,
   });
 
+// Routed through the Next.js proxy to avoid CORS (same-origin → server → Django).
+// See: src/app/api/proxy/login/route.ts
 export const loginCustomer = (payload: { phone_number: string; password: string }) =>
-  apiFetch<LoginResponse>('/api/customers/login/', {
+  apiFetch<LoginResponse>('/api/proxy/login', {
     method: 'POST',
     body: payload,
   });

@@ -139,6 +139,22 @@ export default function DashboardOverview() {
         </div>
       </section>
 
+      {/* ── STANDARD SHOP BANNER ── */}
+      <div className="standard-shop-banner">
+        <div className="standard-shop-text">
+          <span className="standard-shop-icon">🛍️</span>
+          <span>Earn more points on your next purchase</span>
+        </div>
+        <a
+          href="https://radiantrepose.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="standard-shop-btn"
+        >
+          Continue Shopping
+        </a>
+      </div>
+
       {/* ── 2. REDEEM ── */}
       <section id="rewards" className="scroll-mt">
         <h2 className="section-title">Redeem Your Points</h2>
